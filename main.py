@@ -19,7 +19,6 @@ def calculate_quantity(price):
     quantity = math.floor(10000/price)
     return quantity
 
-#
 @app.lib.cron()
 def buy_stocks(event):
     """
@@ -40,7 +39,6 @@ def buy_stocks(event):
 
     if len(stocks_to_buy) != 0:
         # notional = (float(buying_power)/2)/len(stocks_to_buy)
-        print("No stonks today")
 
         for ticker in stocks_to_buy:
             if ticker in symbols:
@@ -77,3 +75,5 @@ def buy_stocks(event):
                     print(f"{ticker} could not be purchased")
                     print(err)
                     pass
+    else:
+        print("No stonks today")
