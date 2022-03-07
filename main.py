@@ -19,6 +19,7 @@ def calculate_quantity(price):
     quantity = math.floor(10000/price)
     return quantity
 
+#
 @app.lib.cron()
 def buy_stocks(event):
     """
@@ -29,6 +30,10 @@ def buy_stocks(event):
 
     api = tradeapi.REST(key_id, secret_key, base_url)
 
+    symbols = []
+    for position in api.list_positions():
+        symbols.append(position.symbol)
+
     # account = api.get_account()
 
     # buying_power = account.buying_power
@@ -38,35 +43,37 @@ def buy_stocks(event):
         print("No stonks today")
 
         for ticker in stocks_to_buy:
-            try:
+            if ticker in symbols:
+                continue
+            else:
+                try:
+                    latest_quote = api.get_latest_quote(ticker).ap
 
-                latest_quote = api.get_latest_quote(ticker).ap
+                    qty = calculate_quantity(latest_quote)
 
-                qty = calculate_quantity(latest_quote)
+                    api.submit_order(symbol=ticker, 
+                    qty=qty, 
+                    side='buy', 
+                    type='market', 
+                    time_in_force='day',
+                    take_profit=dict(
+                        limit_price=latest_quote*1.2
+                    ))
 
-                api.submit_order(symbol=ticker, 
-                qty=qty, 
-                side='buy', 
-                type='market', 
-                time_in_force='day',
-                take_profit=dict(
-                    limit_price=latest_quote*1.2
-                ))
-
-                waiting = True
-                while waiting:
-                    try:
-                        api.submit_order(symbol=ticker,
-                        qty=qty,
-                        side="sell",
-                        type="trailing_stop",
-                        time_in_force="day",
-                        trail_percent=20)
-                        
-                        waiting = False
-                    except HTTPError:
-                        time.sleep(5)
-            except Exception as err:
-                print(f"{ticker} could not be purchased")
-                print(err)
-                pass
+                    waiting = True
+                    while waiting:
+                        try:
+                            api.submit_order(symbol=ticker,
+                            qty=qty,
+                            side="sell",
+                            type="trailing_stop",
+                            time_in_force="day",
+                            trail_percent=20)
+                            
+                            waiting = False
+                        except HTTPError:
+                            time.sleep(5)
+                except Exception as err:
+                    print(f"{ticker} could not be purchased")
+                    print(err)
+                    pass
