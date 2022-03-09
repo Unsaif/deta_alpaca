@@ -75,7 +75,7 @@ def buy_stocks(event):
                         except Exception as err:
                             print(err)
                             print("waiting")
-                            time.sleep(5)
+                            time.sleep(0.5)
                             continue
                 except Exception as err:
                     print(f"{ticker} could not be purchased")
