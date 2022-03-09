@@ -1,9 +1,10 @@
-from urllib.error import HTTPError
 import requests
 import os
 import alpaca_trade_api as tradeapi
+from alpaca_trade_api.rest import TimeFrame, TimeFrameUnit
 from dotenv import load_dotenv
 import math
+from urllib.error import HTTPError
 import time
 
 from deta import app
@@ -16,7 +17,7 @@ base_url = 'https://paper-api.alpaca.markets'
 trade_url = 'https://ebm573.deta.dev/stocks_to_buy'
 
 def calculate_quantity(price):
-    quantity = math.floor(10000/price)
+    quantity = math.floor(5000/price)
     return quantity
 
 @app.lib.cron()
@@ -42,12 +43,14 @@ def buy_stocks(event):
 
         for ticker in stocks_to_buy:
             if ticker in symbols:
+                print(f"{ticker} in symbols")
                 continue
             else:
                 try:
-                    latest_quote = api.get_latest_quote(ticker).ap
+                    ticker_bars = api.get_bars(ticker, TimeFrame(1, TimeFrameUnit.Minute)).df.iloc[0]
+                    ticker_price = ticker_bars['close']
 
-                    qty = calculate_quantity(latest_quote)
+                    qty = calculate_quantity(ticker_price)
 
                     api.submit_order(symbol=ticker, 
                     qty=qty, 
@@ -55,7 +58,7 @@ def buy_stocks(event):
                     type='market', 
                     time_in_force='day',
                     take_profit=dict(
-                        limit_price=latest_quote*1.2
+                        limit_price=ticker_price*1.2
                     ))
 
                     waiting = True
@@ -65,15 +68,18 @@ def buy_stocks(event):
                             qty=qty,
                             side="sell",
                             type="trailing_stop",
-                            time_in_force="day",
+                            time_in_force="gtc",
                             trail_percent=20)
                             
                             waiting = False
-                        except HTTPError:
+                        except Exception as err:
+                            print(err)
+                            print("waiting")
                             time.sleep(5)
+                            continue
                 except Exception as err:
                     print(f"{ticker} could not be purchased")
                     print(err)
-                    pass
+                    continue
     else:
         print("No stonks today")
