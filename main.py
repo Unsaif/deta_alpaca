@@ -69,7 +69,7 @@ def buy_stocks(event):
                             side="sell",
                             type="trailing_stop",
                             time_in_force="gtc",
-                            trail_percent=20)
+                            trail_percent=12)
                             
                             waiting = False
                         except Exception as err:
