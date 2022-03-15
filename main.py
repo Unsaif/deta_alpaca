@@ -4,7 +4,6 @@ import alpaca_trade_api as tradeapi
 from alpaca_trade_api.rest import TimeFrame, TimeFrameUnit
 from dotenv import load_dotenv
 import math
-from urllib.error import HTTPError
 import time
 
 from deta import app
@@ -17,7 +16,7 @@ base_url = 'https://paper-api.alpaca.markets'
 trade_url = 'https://ebm573.deta.dev/stocks_to_buy'
 
 def calculate_quantity(price):
-    quantity = math.floor(5000/price)
+    quantity = math.floor(500/price)
     return quantity
 
 @app.lib.cron()
@@ -34,11 +33,14 @@ def buy_stocks(event):
     for position in api.list_positions():
         symbols.append(position.symbol)
 
-    # account = api.get_account()
+    account = api.get_account()
 
-    # buying_power = account.buying_power
+    buying_power = account.buying_power
 
-    if len(stocks_to_buy) != 0:
+    if float(buying_power) < 500:
+        print("Low on funds.")
+        pass
+    elif len(stocks_to_buy) != 0:
         # notional = (float(buying_power)/2)/len(stocks_to_buy)
 
         for ticker in stocks_to_buy:
